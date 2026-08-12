@@ -141,25 +141,13 @@ export class AssistantMessageComponent extends Container {
 
 				const runIndex = thinkingRunIndex++;
 				const hidden = this.thinkingVisibilityOverrides.get(runIndex) ?? this.hideThinkingBlock;
-				const thinkingComponent = hidden
-					? new Text(theme.italic(theme.fg("thinkingText", this.hiddenThinkingLabel)), this.outputPad, 0)
-					: new Markdown(
-							thinkingBlocks.join("\n\n"),
-							this.outputPad,
-							0,
-							this.markdownTheme,
-							{
-								color: (text: string) => theme.fg("thinkingText", text),
-								italic: true,
-							},
-							{
-								transform: createMarkdownTransform(
-									"assistant-thinking",
-									this.isStreaming,
-									this.markdownTransformers,
-								),
-							},
-						);
+				// Render thinking as plain text, not Markdown, so reasoning
+				// content with Markdown syntax reads verbatim.
+				const thinkingComponent = new Text(
+					theme.italic(theme.fg("thinkingText", hidden ? this.hiddenThinkingLabel : thinkingBlocks.join("\n\n"))),
+					this.outputPad,
+					0,
+				);
 				this.contentContainer.addChild(
 					new MouseRegion(thinkingComponent, (event) => {
 						if (event.type !== "click" || event.button !== "left") return undefined;
