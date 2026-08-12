@@ -17,11 +17,10 @@ const OSC133_ZONE_END = "\x1b]133;B\x07";
 const OSC133_ZONE_FINAL = "\x1b]133;C\x07";
 
 /**
- * A Markdown block of the last update. The next update reuses it at the same position for the same kind of content, so
- * a streamed answer keeps the blocks it already rendered, also once the stream ends.
+ * A Markdown block of the last update. The next update reuses it at the same position, so a streamed answer keeps the
+ * blocks it already rendered, also once the stream ends.
  */
 interface MarkdownSlot {
-	kind: "text" | "thinking";
 	markdown: Markdown;
 }
 
@@ -122,11 +121,11 @@ export class AssistantMessageComponent extends Container {
 		this.contentContainer.clear();
 		const previousSlots = this.markdownSlots;
 		this.markdownSlots = [];
-		const markdownBlock = (kind: MarkdownSlot["kind"], text: string, create: () => Markdown): Markdown => {
+		const markdownBlock = (text: string, create: () => Markdown): Markdown => {
 			const slot = previousSlots[this.markdownSlots.length];
-			const markdown = slot?.kind === kind ? slot.markdown : create();
+			const markdown = slot?.markdown ?? create();
 			markdown.setText(text);
-			this.markdownSlots.push({ kind, markdown });
+			this.markdownSlots.push({ markdown });
 			return markdown;
 		};
 
@@ -152,7 +151,6 @@ export class AssistantMessageComponent extends Container {
 				const text = content.text.trim();
 				addVisibleChild(
 					markdownBlock(
-						"text",
 						text,
 						() =>
 							new Markdown(text, this.outputPad, 0, this.markdownTheme, undefined, {
@@ -190,33 +188,13 @@ export class AssistantMessageComponent extends Container {
 				if (hidden && !this.hiddenThinkingLabel.trim()) {
 					continue;
 				}
-				const thinking = thinkingBlocks.join("\n\n");
-				const thinkingComponent = hidden
-					? new Text(theme.italic(theme.fg("thinkingText", this.hiddenThinkingLabel)), this.outputPad, 0)
-					: markdownBlock(
-							"thinking",
-							thinking,
-							() =>
-								new Markdown(
-									thinking,
-									this.outputPad,
-									0,
-									this.markdownTheme,
-									{
-										color: (text: string) => theme.fg("thinkingText", text),
-										italic: true,
-									},
-									{
-										transform: createMarkdownTransform(
-											"assistant-thinking",
-											() => this.isStreaming,
-											this.markdownTransformers,
-											this.messageId,
-											this.timestamp,
-										),
-									},
-								),
-						);
+				// Render thinking as plain text, not Markdown, so reasoning
+				// content with Markdown syntax reads verbatim.
+				const thinkingComponent = new Text(
+					theme.italic(theme.fg("thinkingText", hidden ? this.hiddenThinkingLabel : thinkingBlocks.join("\n\n"))),
+					this.outputPad,
+					0,
+				);
 				addVisibleChild(
 					new MouseRegion(thinkingComponent, (event) => {
 						if (event.type !== "click" || event.button !== "left") return undefined;
