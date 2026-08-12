@@ -206,7 +206,20 @@ describe("AssistantMessageComponent", () => {
 		expect(calls).toEqual(["first", "throw", "last"]);
 	});
 
-	test("transforms text and thinking Markdown without mutating the original message", () => {
+	test("renders Markdown syntax inside thinking verbatim", () => {
+		initTheme("dark");
+
+		const component = new AssistantMessageComponent(
+			createAssistantMessage([
+				{ type: "thinking", thinking: "**bold** and `code` and [link](https://example.com)" },
+			]),
+		);
+		const rendered = stripAnsi(component.render(80).join("\n"));
+
+		expect(rendered).toContain("**bold** and `code` and [link](https://example.com)");
+	});
+
+	test("renders thinking as plain text without Markdown parsing or transformers", () => {
 		initTheme("dark");
 		const message = createAssistantMessage([
 			{ type: "text", text: "answer" },
@@ -220,7 +233,8 @@ describe("AssistantMessageComponent", () => {
 
 		const rendered = stripAnsi(component.render(80).join("\n"));
 		expect(rendered).toContain("assistant:answer");
-		expect(rendered).toContain("assistant-thinking:reasoning");
+		expect(rendered).toContain("reasoning");
+		expect(rendered).not.toContain("assistant-thinking:reasoning");
 		expect(message.content).toEqual([
 			{ type: "text", text: "answer" },
 			{ type: "thinking", thinking: "reasoning" },

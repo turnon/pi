@@ -142,25 +142,11 @@ export class AssistantMessageComponent extends Container {
 						new Text(theme.italic(theme.fg("thinkingText", this.hiddenThinkingLabel)), this.outputPad, 0),
 					);
 				} else {
-					// Render each run of thinking blocks as one Markdown section.
+					// Render each run of thinking blocks as plain text, not Markdown, so
+					// reasoning content with Markdown syntax reads verbatim.
+					const thinkingText = thinkingBlocks.join("\n\n");
 					this.contentContainer.addChild(
-						new Markdown(
-							thinkingBlocks.join("\n\n"),
-							this.outputPad,
-							0,
-							this.markdownTheme,
-							{
-								color: (text: string) => theme.fg("thinkingText", text),
-								italic: true,
-							},
-							{
-								transform: createMarkdownTransform(
-									"assistant-thinking",
-									this.isStreaming,
-									this.markdownTransformers,
-								),
-							},
-						),
+						new Text(theme.italic(theme.fg("thinkingText", thinkingText)), this.outputPad, 0),
 					);
 				}
 				if (hasVisibleContentAfter) {
