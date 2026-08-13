@@ -347,12 +347,11 @@ describe("Markdown component", () => {
 			assert.ok(plainLines.some((line) => line.includes("Age")));
 			assert.ok(plainLines.some((line) => line.includes("Alice")));
 			assert.ok(plainLines.some((line) => line.includes("Bob")));
-			// Check for table borders
-			assert.ok(plainLines.some((line) => line.includes("│")));
+			// Check for header underline
 			assert.ok(plainLines.some((line) => line.includes("─")));
 		});
 
-		it("should render row dividers between data rows", () => {
+		it("should render only the header separator between header and body", () => {
 			const markdown = new Markdown(
 				`| Name | Age |
 | --- | --- |
@@ -365,9 +364,9 @@ describe("Markdown component", () => {
 
 			const lines = markdown.render(80);
 			const plainLines = lines.map((line) => line.replace(/\x1b\[[0-9;]*m/g, ""));
-			const dividerLines = plainLines.filter((line) => line.includes("┼"));
+			const separatorLines = plainLines.filter((line) => /^[─ ]+$/.test(line) && line.includes("─"));
 
-			assert.strictEqual(dividerLines.length, 2, "Expected header + row divider");
+			assert.strictEqual(separatorLines.length, 1, "Expected only the header underline");
 		});
 
 		it("should keep column width at least the longest word", () => {
@@ -387,10 +386,10 @@ describe("Markdown component", () => {
 			const dataLine = plainLines.find((line) => line.includes(longestWord));
 			assert.ok(dataLine, "Expected data row containing longest word");
 
-			const segments = dataLine.split("│").slice(1, -1);
-			const [firstSegment] = segments;
-			assert.ok(firstSegment, "Expected first column segment");
-			const firstColumnWidth = firstSegment.length - 2;
+			// Column 1 is left-padded by 1 and its text left-aligned, so splitting
+			// the data line on the gap (join space + column-2 left pad) yields the
+			// padded first cell; minus the leading pad = column 1 width.
+			const firstColumnWidth = dataLine.split(/\s{2,}/)[0].length - 1;
 
 			assert.ok(
 				firstColumnWidth >= longestWord.length,
@@ -583,8 +582,8 @@ describe("Markdown component", () => {
 			const plainLines = lines.map((line) => line.replace(/\x1b\[[0-9;]*m/g, "").trimEnd());
 
 			// Should have multiple data rows due to wrapping
-			const dataRows = plainLines.filter((line) => line.startsWith("│") && !line.includes("─"));
-			assert.ok(dataRows.length > 2, `Expected wrapped rows, got ${dataRows.length} rows`);
+			const contentRows = plainLines.filter((line) => line !== "" && !/^[─ ]+$/.test(line));
+			assert.ok(contentRows.length > 2, `Expected wrapped rows, got ${contentRows.length} rows`);
 
 			// All content should be preserved (may be split across lines)
 			const allText = plainLines.join(" ");
@@ -615,22 +614,14 @@ describe("Markdown component", () => {
 				assert.ok(line.length <= width, `Line exceeds width ${width}: "${line}" (length: ${line.length})`);
 			}
 
-			// Borders should stay intact (exactly 2 vertical borders for a 1-col table)
-			const tableLines = plainLines.filter((line) => line.startsWith("│"));
-			assert.ok(tableLines.length > 0, "Expected table rows to render");
-			for (const line of tableLines) {
-				const borderCount = line.split("│").length - 1;
-				assert.strictEqual(borderCount, 2, `Expected 2 borders, got ${borderCount}: "${line}"`);
-			}
-
-			// Strip box drawing characters + whitespace so we can assert the URL is preserved
+			// Strip dashes + whitespace so we can assert the URL is preserved
 			// even if it was split across multiple wrapped lines.
-			const extracted = plainLines.join("").replace(/[│├┤─\s]/g, "");
+			const extracted = plainLines.join("").replace(/[─\s]/g, "");
 			assert.ok(extracted.includes("prefix"), "Should preserve 'prefix'");
 			assert.ok(extracted.includes(url), "Should preserve URL");
 		});
 
-		it("should wrap styled inline code inside table cells without breaking borders", () => {
+		it("should wrap styled inline code inside table cells without overflowing", () => {
 			const markdown = new Markdown(
 				`| Code |
 | --- |
@@ -648,12 +639,6 @@ describe("Markdown component", () => {
 			const plainLines = lines.map((line) => line.replace(/\x1b\[[0-9;]*m/g, "").trimEnd());
 			for (const line of plainLines) {
 				assert.ok(line.length <= width, `Line exceeds width ${width}: "${line}" (length: ${line.length})`);
-			}
-
-			const tableLines = plainLines.filter((line) => line.startsWith("│"));
-			for (const line of tableLines) {
-				const borderCount = line.split("│").length - 1;
-				assert.strictEqual(borderCount, 2, `Expected 2 borders, got ${borderCount}: "${line}"`);
 			}
 		});
 
@@ -697,10 +682,9 @@ describe("Markdown component", () => {
 			// Should have proper table structure
 			const headerLine = plainLines.find((line) => line.includes("A") && line.includes("B"));
 			assert.ok(headerLine, "Should have header row");
-			assert.ok(headerLine?.includes("│"), "Header should have borders");
 
-			const separatorLine = plainLines.find((line) => line.includes("├") && line.includes("┼"));
-			assert.ok(separatorLine, "Should have separator row");
+			const separatorLine = plainLines.find((line) => /^[─ ]+$/.test(line));
+			assert.ok(separatorLine, "Should have header underline");
 
 			const dataLine = plainLines.find((line) => line.includes("1") && line.includes("2"));
 			assert.ok(dataLine, "Should have data row");
@@ -726,8 +710,8 @@ describe("Markdown component", () => {
 			}
 
 			// Table rows should have left padding
-			const tableRow = plainLines.find((line) => line.includes("│"));
-			assert.ok(tableRow?.startsWith("  "), "Table should have left padding");
+			const separatorLine = plainLines.find((line) => /^[─ ]+$/.test(line));
+			assert.ok(separatorLine?.startsWith("  "), "Table should have left padding");
 		});
 
 		it("should not add a trailing blank line when table is the last rendered block", () => {
@@ -778,7 +762,7 @@ describe("Markdown component", () => {
 			assert.ok(plainLines.some((line) => line.includes("    - Nested item")));
 			// Check table
 			assert.ok(plainLines.some((line) => line.includes("Col1")));
-			assert.ok(plainLines.some((line) => line.includes("│")));
+			assert.ok(plainLines.some((line) => /^[─ ]+$/.test(line)));
 		});
 	});
 
@@ -884,7 +868,7 @@ A=
 			const output = lines.join("\n");
 
 			assert.ok(output.includes("- Formula: F₁ = u²"));
-			assert.ok(output.includes("│ ℂ³"));
+			assert.ok(output.includes("ℂ³"));
 		});
 
 		it("does not treat currency, shell variables, or code spans as math", () => {
