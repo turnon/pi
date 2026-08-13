@@ -836,6 +836,15 @@ export class Markdown implements Component {
 	}
 
 	/**
+	 * Pad a table cell line: one space of internal left padding for every cell,
+	 * plus one space of internal right padding for the last column.
+	 */
+	private padTableCell(text: string, colIdx: number, numCols: number, columnWidths: number[]): string {
+		const padded = text + " ".repeat(Math.max(0, columnWidths[colIdx] - visibleWidth(text)));
+		return ` ${padded}${colIdx === numCols - 1 ? " " : ""}`;
+	}
+
+	/**
 	 * Render a table with width-aware cell wrapping.
 	 * Cells that don't fit are wrapped to multiple lines.
 	 */
@@ -852,10 +861,12 @@ export class Markdown implements Component {
 			return lines;
 		}
 
-		// Calculate border overhead: "│ " + (n-1) * " │ " + " │"
-		// = 2 + (n-1) * 3 + 2 = 3n + 1
-		const borderOverhead = 3 * numCols + 1;
-		const availableForCells = availableWidth - borderOverhead;
+		// No vertical borders. Cells get one space of internal left padding, the
+		// last column also gets one space of right padding, plus a single space
+		// gap between columns. Total overhead = n (left pads) + 1 (last right pad)
+		// + (n-1) (gaps) = 2n.
+		const paddingOverhead = 2 * numCols;
+		const availableForCells = availableWidth - paddingOverhead;
 		if (availableForCells < numCols) {
 			// Too narrow to render a stable table. Fall back to raw markdown.
 			const fallbackLines = token.raw ? wrapTextWithAnsi(token.raw, availableWidth) : [];
@@ -916,7 +927,7 @@ export class Markdown implements Component {
 		}
 
 		// Calculate column widths that fit within available width
-		const totalNaturalWidth = naturalWidths.reduce((a, b) => a + b, 0) + borderOverhead;
+		const totalNaturalWidth = naturalWidths.reduce((a, b) => a + b, 0) + paddingOverhead;
 		let columnWidths: number[];
 
 		if (totalNaturalWidth <= availableWidth) {
@@ -956,11 +967,7 @@ export class Markdown implements Component {
 			}
 		}
 
-		// Render top border
-		const topBorderCells = columnWidths.map((w) => "─".repeat(w));
-		lines.push(`┌─${topBorderCells.join("─┬─")}─┐`);
-
-		// Render header with wrapping
+		// Render header with wrapping (no top border)
 		const headerCellLines: string[][] = token.header.map((cell, i) => {
 			const text = this.renderInlineTokens(cell.tokens || [], styleContext);
 			return this.wrapCellText(text, columnWidths[i], styleContext?.stylePrefix);
@@ -970,20 +977,18 @@ export class Markdown implements Component {
 		for (let lineIdx = 0; lineIdx < headerLineCount; lineIdx++) {
 			const rowParts = headerCellLines.map((cellLines, colIdx) => {
 				const text = cellLines[lineIdx] || "";
-				const padded = text + " ".repeat(Math.max(0, columnWidths[colIdx] - visibleWidth(text)));
-				return this.theme.bold(padded);
+				return this.theme.bold(this.padTableCell(text, colIdx, numCols, columnWidths));
 			});
-			lines.push(`│ ${rowParts.join(" │ ")} │`);
+			lines.push(rowParts.join(" "));
 		}
 
-		// Render separator
-		const separatorCells = columnWidths.map((w) => "─".repeat(w));
-		const separatorLine = `├─${separatorCells.join("─┼─")}─┤`;
-		lines.push(separatorLine);
+		// Render separator (header bottom edge / body top edge) as a continuous line
+		// spanning the full table width (same width as the cell lines).
+		const separatorWidth = columnWidths.reduce((a, b) => a + b, 0) + paddingOverhead;
+		lines.push(` ${"─".repeat(separatorWidth - 1)}`);
 
-		// Render rows with wrapping
-		for (let rowIndex = 0; rowIndex < token.rows.length; rowIndex++) {
-			const row = token.rows[rowIndex];
+		// Render rows with wrapping (no inter-row separators, no bottom border)
+		for (const row of token.rows) {
 			const rowCellLines: string[][] = row.map((cell, i) => {
 				const text = this.renderInlineTokens(cell.tokens || [], styleContext);
 				return this.wrapCellText(text, columnWidths[i], styleContext?.stylePrefix);
@@ -993,19 +998,11 @@ export class Markdown implements Component {
 			for (let lineIdx = 0; lineIdx < rowLineCount; lineIdx++) {
 				const rowParts = rowCellLines.map((cellLines, colIdx) => {
 					const text = cellLines[lineIdx] || "";
-					return text + " ".repeat(Math.max(0, columnWidths[colIdx] - visibleWidth(text)));
+					return this.padTableCell(text, colIdx, numCols, columnWidths);
 				});
-				lines.push(`│ ${rowParts.join(" │ ")} │`);
-			}
-
-			if (rowIndex < token.rows.length - 1) {
-				lines.push(separatorLine);
+				lines.push(rowParts.join(" "));
 			}
 		}
-
-		// Render bottom border
-		const bottomBorderCells = columnWidths.map((w) => "─".repeat(w));
-		lines.push(`└─${bottomBorderCells.join("─┴─")}─┘`);
 
 		if (nextTokenType && nextTokenType !== "space") {
 			lines.push(""); // Add spacing after table
