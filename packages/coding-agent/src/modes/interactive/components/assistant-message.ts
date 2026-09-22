@@ -153,15 +153,22 @@ export class AssistantMessageComponent extends Container {
 					markdownBlock(
 						text,
 						() =>
-							new Markdown(text, this.outputPad, 0, this.markdownTheme, undefined, {
-								transform: createMarkdownTransform(
-									"assistant",
-									() => this.isStreaming,
-									this.markdownTransformers,
-									this.messageId,
-									this.timestamp,
-								),
-							}),
+							new Markdown(
+								text,
+								this.outputPad,
+								0,
+								this.markdownTheme,
+								{ color: (text: string) => theme.fg("text", text) },
+								{
+									transform: createMarkdownTransform(
+										"assistant",
+										() => this.isStreaming,
+										this.markdownTransformers,
+										this.messageId,
+										this.timestamp,
+									),
+								},
+							),
 					),
 				);
 			} else if (content.type === "thinking") {

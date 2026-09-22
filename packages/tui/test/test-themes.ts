@@ -26,6 +26,7 @@ export const defaultMarkdownTheme: MarkdownTheme = {
 	quoteBorder: (text: string) => chalk.dim(text),
 	hr: (text: string) => chalk.dim(text),
 	listBullet: (text: string) => chalk.cyan(text),
+	tableSeparator: (text: string) => chalk.dim(text),
 	bold: (text: string) => chalk.bold(text),
 	italic: (text: string) => chalk.italic(text),
 	strikethrough: (text: string) => chalk.strikethrough(text),
