@@ -81,5 +81,5 @@ export function renderToolPath(
 	if (rawPath === null) return invalidArgText(theme);
 	const value = rawPath || options?.emptyFallback;
 	if (!value) return theme.fg("toolOutput", "...");
-	return linkPath(shortenPath(value), value, cwd);
+	return theme.fg("text", linkPath(shortenPath(value), value, cwd));
 }

@@ -231,6 +231,7 @@ const SELF_UPDATE_NOTE_MARKDOWN_THEME: MarkdownTheme = {
 	quoteBorder: (text) => chalk.dim(text),
 	hr: (text) => chalk.dim(text),
 	listBullet: (text) => chalk.yellow(text),
+	tableSeparator: (text) => chalk.dim(text),
 	bold: (text) => chalk.bold(text),
 	italic: (text) => chalk.italic(text),
 	strikethrough: (text) => chalk.strikethrough(text),

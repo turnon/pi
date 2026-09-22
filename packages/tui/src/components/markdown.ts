@@ -208,6 +208,7 @@ export interface MarkdownTheme {
 	quoteBorder: (text: string) => string;
 	hr: (text: string) => string;
 	listBullet: (text: string) => string;
+	tableSeparator: (text: string) => string;
 	bold: (text: string) => string;
 	italic: (text: string) => string;
 	strikethrough: (text: string) => string;
@@ -985,7 +986,7 @@ export class Markdown implements Component {
 		// Render separator (header bottom edge / body top edge) as a continuous line
 		// spanning the full table width (same width as the cell lines).
 		const separatorWidth = columnWidths.reduce((a, b) => a + b, 0) + paddingOverhead;
-		lines.push(` ${"─".repeat(separatorWidth - 1)}`);
+		lines.push(this.theme.tableSeparator(` ${"─".repeat(separatorWidth - 1)}`));
 
 		// Render rows with wrapping (no inter-row separators, no bottom border)
 		for (const row of token.rows) {
