@@ -42,6 +42,7 @@ const theme: MarkdownTheme = {
 	quoteBorder: (text) => text,
 	hr: (text) => text,
 	listBullet: (text) => text,
+	tableSeparator: (text) => text,
 	bold: (text) => text,
 	italic: (text) => text,
 	strikethrough: (text) => text,

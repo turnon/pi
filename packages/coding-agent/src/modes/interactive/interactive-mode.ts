@@ -944,7 +944,11 @@ export class InteractiveMode {
 			} else {
 				this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "What's New")), 1, 0));
 				this.chatContainer.addChild(new Spacer(1));
-				this.chatContainer.addChild(this.createChangelogMarkdown(this.changelogMarkdown.trim(), 1, 0));
+				this.chatContainer.addChild(
+					this.createChangelogMarkdown(this.changelogMarkdown.trim(), 1, 0, {
+						color: (text: string) => theme.fg("text", text),
+					}),
+				);
 				this.chatContainer.addChild(new Spacer(1));
 			}
 		}
@@ -963,7 +967,9 @@ export class InteractiveMode {
 				);
 				this.chatContainer.addChild(new Spacer(1));
 				const markdown = this.extensionChangelogUpdates.map((update) => update.markdown).join("\n\n");
-				this.chatContainer.addChild(this.createChangelogMarkdown(markdown, 1, 0));
+				this.chatContainer.addChild(
+					this.createChangelogMarkdown(markdown, 1, 0, { color: (text: string) => theme.fg("text", text) }),
+				);
 				this.chatContainer.addChild(new Spacer(1));
 			}
 		}
@@ -7037,7 +7043,9 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new DynamicBorder());
 		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "What's New")), 1, 0));
 		this.chatContainer.addChild(new Spacer(1));
-		this.chatContainer.addChild(this.createChangelogMarkdown(changelogMarkdown, 1, 1));
+		this.chatContainer.addChild(
+			this.createChangelogMarkdown(changelogMarkdown, 1, 1, { color: (text: string) => theme.fg("text", text) }),
+		);
 		this.chatContainer.addChild(new DynamicBorder());
 		this.ui.requestRender();
 	}
@@ -7168,7 +7176,11 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new DynamicBorder());
 		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "Keyboard Shortcuts")), 1, 0));
 		this.chatContainer.addChild(new Spacer(1));
-		this.chatContainer.addChild(new Markdown(hotkeys.trim(), 1, 1, this.getMarkdownThemeWithSettings()));
+		this.chatContainer.addChild(
+			new Markdown(hotkeys.trim(), 1, 1, this.getMarkdownThemeWithSettings(), {
+				color: (text: string) => theme.fg("text", text),
+			}),
+		);
 		this.chatContainer.addChild(new DynamicBorder());
 		this.ui.requestRender();
 	}
